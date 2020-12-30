@@ -8,5 +8,5 @@ tmp/
 build
 htmlcov
 .python-version
-
+matlab/*
 *.pdf
