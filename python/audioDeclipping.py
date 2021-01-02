@@ -11,8 +11,8 @@ A = AnalysisFrame(window="hamming",
                   overlap_percent=0.75)
 D = SynthesisFrame(window="hamming",
                   overlap_percent=0.75)
-xhatAna = prob.solve("ASPADE", A,iter_max=1000)
-xhatAnaBloc = prob.solve_block("ASPADE", A,4096,iter_max=1024,progress=False)
+xhatAna = prob.solve("ASPADE", A,iter_max=100)
+xhatAnaBloc = prob.solve_block("ASPADE", A,4096,iter_max=100,progress=False)
 
 plt.figure()
 plt.plot(x)
