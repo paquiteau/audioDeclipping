@@ -1,7 +1,7 @@
 #+title: A Review of audio declipping through a sparse prior
 #+author: Pierre-Antoine Comby
 #+date:  2020-12-07
-#+property: header-args:python :tangle yes :exports results
+#+property: header-args:python :tangle python/audioDeclipping.py :exports none :session ses1
 #+options: toc:nil
 #+language: en
 #+latex_class_options: [twocolumn]
@@ -17,30 +17,6 @@
 The inverse problem of audio declipping is ill posed and a regularization prior is thus needed, in particular a sparse synthesis (or in dual space a analysis) are presented and tested. In the following, we implement and extends the methods presented in XX
 #+end_abstract
 
-
-* Initialization :noexport:
-#+name: imports
-#+begin_src python
-import numpy as np
-import scipy.signal as sps
-import matplotlib.pyplot as plt
-#+end_src
-#+name: base_functions
-#+begin_src python
-def hard_clip(x, th):
-    """Perform hard clip of signal."""
-    y = x
-    y[y > th] = th
-    y[y < -th] = -th
-    return y
-
-
-def hard_zero(x, k):
-    """Keep the K greatest values of x, set the rest to zero."""
-    sort_idx = np.argsort(x)
-    x[sort_idx[:-k]] = 0
-    return x
-#+end_src
 
 * The problem
 
@@ -82,31 +58,6 @@ With:
 \vec{\gamma}_{+}(\Omega_{r}^{+}) &= \tau^{+} \\
 \end{cases}\]
 
-#+begin_src python :exports none
-class Gamma(object):
-    """Defines Gamma(y) the convex set of admissibles signal to declip y."""
-    def __init__(self, y):
-        tau = np.max(y)
-        tauMin = np.min(y)
-        self.mLow = y == tauMin
-        self.mHigh = y == tau
-        self.mRight = not(self.mLow or self.mHigh)
-        self.bLow = np.empty_like(y)
-        self.bHigh = np.empty_like(y)
-        # create the boundary vectors
-        self.bLow[self.mRight] = y[self.mRight]
-        self.bLow[self.mLow] = tauMin
-        self.bLow[self.mHigh] = np.inf
-        self.bHigh[self.mRight] = y[self.mRight]
-        self.bHigh[self.mLow] = -np.inf
-        self.bHigh[self.mHigh] = tau
-
-    def __call__(self, x):
-        """
-        Perform the projection on the Gamma(y) set.
-        """
-        return np.maximum(np.minimum(x, self.bLow), self.bHigh)
-#+end_src
 ** Regularization trough Sparsity
 
 The state of the art for the regularization is to use a sparsity (or in dual space, co-sparsity) prior to solve the inverse problem of declipping. Other approach that are also worth mentioning are: linear prediction, minimization of th energy of high order derivative and psycoacoustic.
@@ -180,6 +131,61 @@ and S-SPADE:
 \end{subequations}
 
 
-* Choice of a Dictionnary Space
+* Time Frequency Analysis
 
 In *cite original paper* not very much attention is paid to the time-frequency transform parameters.
+
+For the Discrete Gabor Transform (ie the short time frequency transform), a wide range of parametrization are available, and a selection of them are represented in the following table:
+
+#+name:config_table
+|         | Config A        | Config B  | Config C |
+|---------+-----------------+-----------+----------|
+| window  | hann            | hann      | hann     |
+| length  | 1024            | 64        | 2048     |
+| overlap | 75%             | 50%       | 50%      |
+|---------+-----------------+-----------+----------|
+| comment | Original Config | Transient | Tonal    |
+|         |                 |           |          |
+
+* Results
+:PROPERTIES:
+:header-args:python: :exports results
+:END:
+
+#+begin_src python
+from declipper import Declipper
+import numpy as np
+import scipy as sp
+from stft import AnalysisFrame, SynthesisFrame
+import matplotlib.pyplot as plt
+
+
+prob, x = Declipper.clipper("quintet.wav",ptile=5)
+
+A = AnalysisFrame(window="hamming",
+                  overlap_percent=0.75)
+D = SynthesisFrame(window="hamming",
+                  overlap_percent=0.75)
+xhatAna = prob.solve("ASPADE", A,iter_max=1000)
+
+plt.plot(x)
+plt.plot(xhatAna)
+plt.plot(prob.y)
+xhatAnaBloc= prob.solve_block("ASPADE", A,4096,iter_max=1024,progress=False)
+
+
+#+end_src
+
+#+RESULTS:
+
+
+* Conclusion
+** Possibilities of enhancement
+
+ - Use a double frame operator STFT trnsform with a transient and tonal decomposition
+ - Test with Wavelet transform
+ - In a more general way, a smarter sampling of the time frequency grid.
+ - Combine sparsity priori with other prior of the literature
+
+
+ All the sources of this project are available at [[https://gitlab.crans.org/comby/audioDeclipping]]
