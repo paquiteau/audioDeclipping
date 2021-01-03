@@ -131,52 +131,9 @@ and S-SPADE:
 \end{subequations}
 
 
-* Time Frequency Analysis
-
-In *cite original paper* not very much attention is paid to the time-frequency transform parameters.
-
-For the Discrete Gabor Transform (ie the short time frequency transform), a wide range of parametrization are available, and a selection of them are represented in the following table:
-
-#+name:config_table
-|         | Config A        | Config B  | Config C |
-|---------+-----------------+-----------+----------|
-| window  | hann            | hann      | hann     |
-| length  | 1024            | 64        | 2048     |
-| overlap | 75%             | 50%       | 50%      |
-|---------+-----------------+-----------+----------|
-| comment | Original Config | Transient | Tonal    |
-|         |                 |           |          |
-
 * Results
-:PROPERTIES:
-:header-args:python: :exports results
-:END:
-
-#+begin_src python
-from declipper import Declipper
-import numpy as np
-import scipy as sp
-from stft import AnalysisFrame, SynthesisFrame
-import matplotlib.pyplot as plt
-
-
-prob, x = Declipper.clipper("quintet.wav",ptile=5)
-
-A = AnalysisFrame(window="hamming",
-                  overlap_percent=0.75)
-D = SynthesisFrame(window="hamming",
-                  overlap_percent=0.75)
-xhatAna = prob.solve("ASPADE", A,iter_max=1000)
-
-plt.plot(x)
-plt.plot(xhatAna)
-plt.plot(prob.y)
-xhatAnaBloc= prob.solve_block("ASPADE", A,4096,iter_max=1024,progress=False)
-
-
-#+end_src
-
-#+RESULTS:
+The presented algorithm have been implemented using Python, and its modules Numpy and Scipy.
+All the sources of this project are available at [[https://gitlab.crans.org/comby/audioDeclipping]]
 
 
 * Conclusion
@@ -188,4 +145,3 @@ xhatAnaBloc= prob.solve_block("ASPADE", A,4096,iter_max=1024,progress=False)
  - Combine sparsity priori with other prior of the literature
 
 
- All the sources of this project are available at [[https://gitlab.crans.org/comby/audioDeclipping]]

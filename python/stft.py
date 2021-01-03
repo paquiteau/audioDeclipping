@@ -17,8 +17,8 @@ class Stft(object):
         self.fs= fs
         self.nperseg = length
         self.noverlap = int(overlap_percent * length)
-        
         self.window = window
+        self.signal_length = signal_length
     def stft(self,x):
         t,f,Zxx = sps.stft(x,self.fs,
                            nperseg=self.nperseg,
@@ -32,7 +32,10 @@ class Stft(object):
         
         
     def istft(self,Zxx):
-        t,x = sps.istft(Zxx,self.fs)
+        t,x = sps.istft(Zxx,self.fs,
+                        nperseg=self.nperseg,
+                        noverlap=self.noverlap,
+                        window=self.window)
         return x[:self.signal_length]
 
 

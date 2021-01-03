@@ -66,54 +66,62 @@ class Declipper(object):
         y[x < thresMin] = thresMin
         y[x > thresMax] = thresMax        
         return cls(y,x), x
-    
+    @staticmethod
+    def sdr(x,y):
+        return 20 * np.log10(np.linalg.norm(x,2)/np.linalg.norm(x-y,2))
+                             
+                             
     def sdr_clipped(self):
         idx = np.logical_not(self.gamma.mRight)
-        return 20 * np.log10(np.linalg.norm(self.x[idx])/
-                             np.linalg.norm(self.x[idx] - self.y[idx]))
-
+        return Declipper.sdr(self.x[idx],self.y[idx])
+    
     def sdr_process(self):
         idx = np.logical_not(self.gamma.mRight)
-        return 20 * np.log10(np.linalg.norm(self.x[idx])/
-                             np.linalg.norm(self.x[idx] - self.xhat[idx]))
-
+        return Declipper.sdr(self.x[idx],self.xhat[idx])
     
-    def aSpade(self, A, k_step=1, iter_k=1, eps=0.1, iter_max=5000, progress=True):
+    
+    def aSpade(self, A, k_step=1, k_init=1, iter_k=1, eps=0.1, iter_max=50, progress=True):
         # create the set of admissibles solutions.
-        z = np.zeros_like(A(self.y))
+        x = self.y.copy()
+        Ax = A(x)
+        z = np.zeros_like(Ax)
         u = np.zeros_like(z)
-        i = 0
-        k = k_step
-        for i in tqdm(range(iter_max),disable=not(progress)):
-            i += 1
-            x = self.gamma(A(z - u,invert=True))
-            Ax = A(x)
+        k = k_init
+        pbar = tqdm(range(iter_max),disable=not(progress))
+        for i in pbar:
+            xprev = x.copy()
             z = hard_zero(Ax + u, k)
+            x = self.gamma(A(z - u, invert=True))
+            Ax = A(x)
             u += Ax - z
-            if np.linalg.norm((Ax - z).flat) < eps:
+            res = np.linalg.norm((Ax-z).flat,2)
+            pbar.set_postfix({'res': res})
+
+            if res < eps:
                 break
             if i % iter_k == 0:
                 k += k_step
         self.xhat = x
         return x
 
-    def sSpade(self, D, k_step=1, iter_k=1, eps=0.1, iter_max=5000, progress=True):
+    def sSpade(self, D, k_step=1,k_init=1, iter_k=1, eps=0.1, iter_max=50, progress=True):
         zhat = D(self.y,invert=True)
         u = np.zeros_like(zhat)
         zbar = np.zeros_like(zhat)
-        i = 0
-        k = k_step
-        for i in tqdm(range(iter_max)):
-            i+=1
+        k = k_init
+        pbar = tqdm(range(iter_max),disable=not(progress))
+        for i in pbar:
             zbar = hard_zero(zhat+u,k)
             v = zbar -u 
             dv = D(v)
             zhat = v - D(dv-self.gamma(dv),invert=True)
-            if np.linalg.norm((zbar- zhat).flat) < eps:
+            res = np.linalg.norm((zbar- zhat).flat,2)
+            sdr = self.sdr
+            pbar.set_postfix({'res': res})
+            if res < eps:
                 break
             if i % iter_k == 0:
                 k += k_step
-    
         self.xhat = D(zhat)
         return self.xhat
     
