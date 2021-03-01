@@ -24,6 +24,16 @@ plt.legend(("x","xhat","y"))
 plt.show()
 plt.savefig("fig1.png")
 
+clip,process = Declipper.sdr_study("../Sounds/double_bass.wav",
+                                    'ASPADE', A,
+                                    k_init=100,
+                                    ptiles=np.linspace(0,30,11),
+                                    iter_max=500)
+clip2,process2 = Declipper.sdr_study("../Sounds/double_bass.wav",
+                                    'SSPADE', D,
+                                    k_init = 100,
+                                    ptiles=np.linspace(0,30,11),
+                                    iter_max=500)
 
 #Figure 2
  
